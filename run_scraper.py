@@ -1,6 +1,7 @@
+import os
 import sys
 # insert at 1, 0 is the script path (or '' in REPL)
-sys.path.insert(1, '../../python-tools/')
+sys.path.insert(1, os.environ['PYTHON_TOOLS'])
 
 import mechanicalsoup as ms
 import notify
