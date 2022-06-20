@@ -9,6 +9,7 @@ import traceback
 from urllib.parse import urljoin
 import json
 import pyshorteners
+from pathlib import Path
 
 PUSH_NOTIFICATION = True
 
@@ -36,6 +37,10 @@ def get_ids():
     prev_aprts = {}
     cur_aprts = {}
     process_page(SEARCH_URL, cur_aprts, 1)
+
+    #Create files if not existing
+    Path(APRTS_FILE).touch(exist_ok=True)
+    Path(HITS_FILE).touch(exist_ok=True)
 
     with open(APRTS_FILE, 'r+') as fp:
         if fp.read() != "":
