@@ -3,11 +3,13 @@ import sys
 sys.path.insert(1, '../../python-tools/')
 
 import mechanicalsoup as ms
-import send_email
+import notify
 import traceback
 from urllib.parse import urljoin
 import json
+import pyshorteners
 
+PUSH_NOTIFICATION = True
 
 BROWSER = ms.StatefulBrowser()
 HITS_FILE = './hits.out'
@@ -24,8 +26,7 @@ def main():
     try:
         get_ids()
     except Exception as e:
-        send_email.send_email(EMAIL, EMAIL, KEYCHAIN_NAME,
-                              'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
+        notify.mail(EMAIL, 'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
         traceback.print_exc()
 
 
@@ -53,16 +54,20 @@ def alert(prev, curr):
         if key not in prev:
             new[key] = val
 
-    SUBJ = 'Nye treff på hybel.no'
-    TEXT = f'Hei!\n\nDet er blitt lagt til {len(new)} nye annonse(r) på hybel.no-søket ditt.' \
-           f'\n\nNåværende antall treff: {len(curr)}\nTidligere antall treff: {len(prev)}\n\nNye treff:'
+    subj = 'Nye treff på hybel.no!'
+    text = f'Det er blitt lagt til {len(new)} nye annonse(r) på hybel.no-søket ditt.' \
+           f'\n\n\nNye treff:'
 
     for (key, val) in new.items():
-        TEXT += '\n{}'.format(urljoin(BASE_URL, val))
+        text += '\n– {}\n'.format(urljoin(BASE_URL, val))
 
-    TEXT += '\n\nLenke til søk:\n{}\n\n\nVennlig hilsen,\nHybel.no-roboten'.format(SEARCH_URL)
+    short_url = pyshorteners.Shortener().tinyurl.short(SEARCH_URL)
+    text += '\n\nLenke til søk:\n{}\n\n\n\n\nVennlig hilsen,\nHybel.no-roboten'.format(short_url)
 
-    send_email.send_email(EMAIL, EMAIL, KEYCHAIN_NAME, SUBJ, TEXT)
+    if PUSH_NOTIFICATION:
+        notify.push_notification(text)
+    else:
+        notify.mail(EMAIL, EMAIL, KEYCHAIN_NAME, subj, text)
 
 
 def process_page(page_url, dict, iter):
