@@ -10,15 +10,17 @@ from urllib.parse import urljoin
 import json
 import pyshorteners
 from pathlib import Path
+import arrow
 
 PUSH_NOTIFICATION = True
 
 BROWSER = ms.StatefulBrowser()
 HITS_FILE = './hits.out'
 APRTS_FILE = './aprts.out'
+HISTORY_FILE = './history.txt'
 MAX_PAGES = 20
 
-SEARCH_URL = "https://hybel.no/bolig-til-leie/Oslo--Norge/?order_by=-created_at&rent_gte=&rent_lte=15000&available_from_gte=&available_from_lte=&rent_period_in=1&sub_locality_in=Frogner&sub_locality_in=Gamle+Oslo&sub_locality_in=Gr%C3%BCnerl%C3%B8kka&sub_locality_in=Majorstuen&sub_locality_in=Sagene&sub_locality_in=Sentrum&sub_locality_in=St.+Hanshaugen&housing_in=2&rooms_in=3"
+SEARCH_URL = "https://hybel.no/bolig-til-leie/Oslo--Norge/?order_by=-created_at&rent_gte=&rent_lte=19000&available_from_gte=&available_from_lte=&rent_period_in=1&sub_locality_in=Frogner&sub_locality_in=Gamle+Oslo&sub_locality_in=Gr%C3%BCnerl%C3%B8kka&sub_locality_in=Majorstuen&sub_locality_in=Sagene&sub_locality_in=Sentrum&sub_locality_in=St.+Hanshaugen&housing_in=2&rooms_in=3"
 BASE_URL = 'https://hybel.no/'
 
 EMAIL = 'landsverk.vegard@gmail.com'
@@ -26,11 +28,17 @@ KEYCHAIN_NAME = 'Gmail - epostskript (gcal)'
 
 def main():
     try:
+        create_files()
         get_ids()
     except Exception as e:
         notify.mail(EMAIL, 'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
         traceback.print_exc()
 
+def create_files():
+    # Create files if not existing
+    Path(APRTS_FILE).touch(exist_ok=True)
+    Path(HITS_FILE).touch(exist_ok=True)
+    Path(HISTORY_FILE).touch(exist_ok=True)
 
 
 def get_ids():
@@ -38,9 +46,6 @@ def get_ids():
     cur_aprts = {}
     process_page(SEARCH_URL, cur_aprts, 1)
 
-    #Create files if not existing
-    Path(APRTS_FILE).touch(exist_ok=True)
-    Path(HITS_FILE).touch(exist_ok=True)
 
     with open(APRTS_FILE, 'r+') as fp:
         if fp.read() != "":
@@ -50,7 +55,7 @@ def get_ids():
     with open(APRTS_FILE, 'w+') as fp:
         json.dump(cur_aprts, fp)
 
-    #Alert if ned aprts added (mere difference could be due to deletion)
+    #Alert if new aprts added (mere difference could be due to deletion)
     if len(cur_aprts.keys() - prev_aprts.keys()) > 0:
         alert(prev_aprts, cur_aprts)
 
@@ -66,8 +71,9 @@ def alert(prev, curr):
            f'\n\n\nNye treff:'
 
     for (key, val) in new.items():
-        text += '\n– {}\n'.format(urljoin(BASE_URL, val))
+        links = '\n– {}\n'.format(urljoin(BASE_URL, val))
 
+    text += links
     short_url = pyshorteners.Shortener().tinyurl.short(SEARCH_URL)
     text += '\n\nLenke til søk:\n{}\n\n\n\n\nVennlig hilsen,\nHybel.no-roboten'.format(short_url)
 
@@ -75,6 +81,13 @@ def alert(prev, curr):
         notify.push_notification(text)
     else:
         notify.mail(EMAIL, EMAIL, KEYCHAIN_NAME, subj, text)
+    write_to_file(links)
+
+def write_to_file(links):
+    timestamp = arrow.now().format('YYYY-MM-DD HH:mm:ss')
+    with open(HISTORY_FILE, 'a') as fp:
+        fp.write(f'{timestamp}{links}\n\n')
+
 
 
 #Scrapes pages recursively. ID used since title (in url) might change.
