@@ -1,5 +1,6 @@
 import os
 import sys
+# Include path for local python-tools (send-email etc.)
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, os.environ['PYTHON_TOOLS'])
 
@@ -20,7 +21,7 @@ APRTS_FILE = './aprts.out'
 HISTORY_FILE = './history.txt'
 MAX_PAGES = 20
 
-SEARCH_URL = "https://hybel.no/bolig-til-leie/Oslo--Norge/?order_by=-created_at&rent_gte=&rent_lte=19000&available_from_gte=&available_from_lte=&rent_period_in=1&sub_locality_in=Frogner&sub_locality_in=Gamle+Oslo&sub_locality_in=Gr%C3%BCnerl%C3%B8kka&sub_locality_in=Majorstuen&sub_locality_in=Sagene&sub_locality_in=Sentrum&sub_locality_in=St.+Hanshaugen&housing_in=2&rooms_in=3"
+SEARCH_URL = "https://hybel.no/bolig-til-leie/Oslo--Norge/?order_by=-created_at&rent_gte=&rent_lte=6500&available_from_gte=&available_from_lte=&rent_period_in=1"
 BASE_URL = 'https://hybel.no/'
 
 EMAIL = 'landsverk.vegard@gmail.com'
