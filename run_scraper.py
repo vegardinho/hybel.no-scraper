@@ -50,7 +50,8 @@ def get_ids():
     with open(APRTS_FILE, 'w+') as fp:
         json.dump(cur_aprts, fp)
 
-    if prev_aprts != cur_aprts:
+    #Alert if ned aprts added (mere difference could be due to deletion)
+    if len(cur_aprts.keys() - prev_aprts.keys()) > 0:
         alert(prev_aprts, cur_aprts)
 
 
@@ -76,6 +77,7 @@ def alert(prev, curr):
         notify.mail(EMAIL, EMAIL, KEYCHAIN_NAME, subj, text)
 
 
+#Scrapes pages recursively. ID used since title (in url) might change.
 def process_page(page_url, dict, iter):
     page = BROWSER.get(page_url).soup
     aprts = page.find_all('a', class_='card card-listing card-listing-home')
