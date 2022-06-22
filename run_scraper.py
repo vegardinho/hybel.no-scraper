@@ -1,9 +1,3 @@
-import os
-import sys
-# Include path for local python-tools (send-email etc.)
-# insert at 1, 0 is the script path (or '' in REPL)
-sys.path.insert(1, os.environ['PYTHON_TOOLS'])
-
 import mechanicalsoup as ms
 import notify
 import traceback
