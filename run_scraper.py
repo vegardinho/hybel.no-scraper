@@ -113,39 +113,3 @@ def process_page(page_url, dict, iter):
 if __name__ == '__main__':
     main()
 
-
-
-
-
-### OLD, MORE SIMPLIFIED VERSION ###
-#
-#
-# def search_apar():
-#     prev_hits = get_hits()
-#
-#     soup = BROWSER.get(search_url).soup
-#     new_hits = soup.find('div', class_='lead').strong.text
-#     write_hits(new_hits)
-#     new_hits = 100
-#
-#     if (prev_hits != new_hits):
-#         SUBJ = 'Nye treff på hybel.no'
-#         TEXT = 'Det er lagt til eller slettet annonser på hybel.no-søket ditt.\n\n' \
-#                'Tidligere treff: {}\nNåværende treff: {}\n\n{}'.format(prev_hits, new_hits, )
-#         send_email.send_email(EMAIL, EMAIL, KEYCHAIN_NAME, SUBJ, TEXT)
-#
-#
-# def write_hits(new_hits):
-#     with open(HITS_FILE, 'w+') as f:
-#         f.write(new_hits)
-#
-#
-# def get_hits():
-#     try:
-#         with open(HITS_FILE, 'r+') as f:
-#             hits = f.read()
-#         assert hits.isdigit()
-#     except Exception as e:
-#         print('Could not read previous hits')
-#
-#     return hits
