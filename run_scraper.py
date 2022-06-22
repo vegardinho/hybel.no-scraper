@@ -21,7 +21,7 @@ APRTS_FILE = './aprts.out'
 HISTORY_FILE = './history.txt'
 MAX_PAGES = 20
 
-SEARCH_URL = "https://hybel.no/bolig-til-leie/Oslo--Norge/?order_by=-created_at&rent_gte=&rent_lte=6500&available_from_gte=&available_from_lte=&rent_period_in=1"
+SEARCH_URL = "https://hybel.no/bolig-til-leie/Oslo--Norge/?order_by=-created_at&rent_gte=&rent_lte=8500&available_from_gte=&available_from_lte=&rent_period_in=1"
 BASE_URL = 'https://hybel.no/'
 
 EMAIL = 'landsverk.vegard@gmail.com'
@@ -71,8 +71,9 @@ def alert(prev, curr):
     text = f'Det er blitt lagt til {len(new)} nye annonse(r) på hybel.no-søket ditt.' \
            f'\n\n\nNye treff:'
 
+    links = ''
     for (key, val) in new.items():
-        links = '\n– {}\n'.format(urljoin(BASE_URL, val))
+        links += '\n– {}\n'.format(urljoin(BASE_URL, val))
 
     text += links
     short_url = pyshorteners.Shortener().tinyurl.short(SEARCH_URL)
