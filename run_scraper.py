@@ -14,38 +14,47 @@ from pathlib import Path
 import arrow
 
 PUSH_NOTIFICATION = True
-
 BROWSER = ms.StatefulBrowser()
+
+SEARCH_URL_FILE = './search_url.in'
 HITS_FILE = './hits.out'
 APRTS_FILE = './aprts.out'
 HISTORY_FILE = './history.txt'
 MAX_PAGES = 20
 
-SEARCH_URL = "https://hybel.no/bolig-til-leie/Oslo--Norge/?order_by=-created_at&rent_gte=&rent_lte=8500&available_from_gte=&available_from_lte=&rent_period_in=1"
 BASE_URL = 'https://hybel.no/'
+search_url = ''
 
 EMAIL = 'landsverk.vegard@gmail.com'
 KEYCHAIN_NAME = 'Gmail - epostskript (gcal)'
 
 def main():
     try:
-        create_files()
+        setup()
         get_ids()
     except Exception as e:
         notify.mail(EMAIL, 'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
         traceback.print_exc()
 
-def create_files():
+def setup():
     # Create files if not existing
     Path(APRTS_FILE).touch(exist_ok=True)
     Path(HITS_FILE).touch(exist_ok=True)
     Path(HISTORY_FILE).touch(exist_ok=True)
+    Path(SEARCH_URL_FILE).touch(exist_ok=True)
+
+    #Get search url from file
+    with open(SEARCH_URL_FILE, 'r') as fp:
+        global search_url
+        search_url = fp.readline().strip('\n')
+        if search_url == '':
+            raise Exception('Please add url to search url file')
 
 
 def get_ids():
     prev_aprts = {}
     cur_aprts = {}
-    process_page(SEARCH_URL, cur_aprts, 1)
+    process_page(search_url, cur_aprts, 1)
 
 
     with open(APRTS_FILE, 'r+') as fp:
@@ -76,7 +85,7 @@ def alert(prev, curr):
         links += '\n– {}\n'.format(urljoin(BASE_URL, val))
 
     text += links
-    short_url = pyshorteners.Shortener().tinyurl.short(SEARCH_URL)
+    short_url = pyshorteners.Shortener().tinyurl.short(search_url)
     text += '\n\nLenke til søk:\n{}\n\n\n\n\nVennlig hilsen,\nHybel.no-roboten'.format(short_url)
 
     if PUSH_NOTIFICATION:
@@ -120,7 +129,7 @@ if __name__ == '__main__':
 # def search_apar():
 #     prev_hits = get_hits()
 #
-#     soup = BROWSER.get(SEARCH_URL).soup
+#     soup = BROWSER.get(search_url).soup
 #     new_hits = soup.find('div', class_='lead').strong.text
 #     write_hits(new_hits)
 #     new_hits = 100
