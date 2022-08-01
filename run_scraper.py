@@ -9,7 +9,7 @@ import arrow
 import os
 
 PUSH_NOTIFICATION = True
-MAX_NOT_ENTRIES = 4
+MAX_NOT_ENTRIES = 5
 
 BROWSER = ms.StatefulBrowser()
 
@@ -27,6 +27,9 @@ KEYCHAIN_NAME = 'Gmail - epostskript (gcal)'
 
 HYBELNO_IND = 0
 FINNNO_IND = 1
+
+URL_IND = 0
+SITE_IND = 1
 
 
 def main():
@@ -65,9 +68,9 @@ def get_ids(search_urls):
     cur_aprts = {}
 
     for search in search_urls:
-        index = search[1]
-        url = search[0]
-        cur_aprts = process_page(url, cur_aprts, 1, index)
+        index = search[SITE_IND]
+        url = search[URL_IND]
+        cur_aprts = process_page(url, cur_aprts, 1, index, url)
 
     with open(APRTS_FILE, 'r+') as fp:
         if fp.read() != "":
@@ -101,8 +104,19 @@ def alert(prev, curr, searches):
     archive_links = ''
     for i in range(0, len(aprt_dicts)):
         aprt_dict = aprt_dicts[i]
-        aprt_txt = f'\n<a href="{aprt_dict["href"]}">{aprt_dict["title"]}</a> – \
-                    {aprt_dict["rent"]}\n{aprt_dict["address"]}\n'
+
+        if i < MAX_NOT_ENTRIES:
+            aprt_url = pyshorteners.Shortener().tinyurl.short(aprt_dict["href"])
+            search_url = pyshorteners.Shortener().tinyurl.short(aprt_dict["search_url"])
+        else:
+            aprt_url = aprt_dict["href"]
+            search_url = aprt_dict["search_url"]
+
+        link = f'<a href="{aprt_url}">{aprt_dict["title"]}</a>'
+        site = "hybel.no" if "hybel.no" in aprt_dict["href"] else "finn.no"
+        search_link = f'<a href="{search_url}">{site}</a>'
+
+        aprt_txt = f'\n{link} – {aprt_dict["rent"]} ({search_link})\n{aprt_dict["address"]}\n'
 
         archive_links += aprt_txt
         if i < MAX_NOT_ENTRIES:
@@ -115,10 +129,10 @@ def alert(prev, curr, searches):
     notify_text += f'\n\nLenke til søk:\n'
 
     for i in range(0, len(short_urls)):
-        search_text = "Hybel.no" if searches[i][1] == HYBELNO_IND else "Finn.no"
+        search_text = "Hybel.no" if searches[i][SITE_IND] == HYBELNO_IND else "Finn.no"
         notify_text += f'<a href="{short_urls[i]}">{search_text} #{i + 1}</a>\n'
 
-    notify_text += '\n\n\nVennlig hilsen,\nHybel.no-roboten'
+    notify_text += '\nVennlig hilsen,\nHybel.no-roboten'
 
     if PUSH_NOTIFICATION:
         notify.push_notification(notify_text)
@@ -134,7 +148,7 @@ def write_to_file(links):
 
 
 # Scrapes pages recursively. ID used since title (in url) might change.
-def process_page(page_url, aprt_dict, page_num, index):
+def process_page(page_url, aprt_dict, page_num, index, orig_url):
     page = BROWSER.get(page_url).soup
 
     if index == HYBELNO_IND:
@@ -169,7 +183,8 @@ def process_page(page_url, aprt_dict, page_num, index):
             href=href,
             title=title,
             address=address,
-            rent=rent
+            rent=rent,
+            search_url=orig_url
         )
 
     next_query = ['page-item next-page ml-gutter', 'button button--pill button--has-icon button--icon-right']
@@ -180,7 +195,7 @@ def process_page(page_url, aprt_dict, page_num, index):
 
         next_url = urljoin(HYBELNO_BASE_URL if HYBELNO_IND else FINNNO_BASE_URL, next_page.attrs['href'])
 
-        process_page(next_url, aprt_dict, page_num, index)
+        process_page(next_url, aprt_dict, page_num, index, orig_url)
 
     return aprt_dict
 
