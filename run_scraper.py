@@ -1,5 +1,5 @@
 import mechanicalsoup as ms
-# import notify
+import notify
 import traceback
 from urllib.parse import urljoin
 import json
@@ -9,6 +9,8 @@ import arrow
 import os
 
 PUSH_NOTIFICATION = True
+MAX_NOT_ENTRIES = 4
+
 BROWSER = ms.StatefulBrowser()
 
 SEARCH_URL_FILE = './search_url.in'
@@ -26,13 +28,15 @@ KEYCHAIN_NAME = 'Gmail - epostskript (gcal)'
 HYBELNO_IND = 0
 FINNNO_IND = 1
 
+
 def main():
     try:
         urls = setup()
         get_ids(urls)
-    except Exception as e:
+    except Exception:
         notify.mail(EMAIL, 'Feil under kjøring av hybelskript', "{}".format(traceback.format_exc()))
         traceback.print_exc()
+
 
 def setup():
     # Create files if not existing
@@ -43,14 +47,14 @@ def setup():
 
     search_urls = []
 
-    #Get search url from file
+    # Get search url from file
     with open(SEARCH_URL_FILE, 'r') as fp:
         url = fp.readline().strip('\n')
         if url == '':
             raise Exception('Please add url to search url file')
 
         while url != '':
-            search_urls.append(url)
+            search_urls.append([url, HYBELNO_IND if "hybel.no" in url else FINNNO_IND])
             url = fp.readline().strip('\n')
 
     return search_urls
@@ -60,8 +64,9 @@ def get_ids(search_urls):
     prev_aprts = {}
     cur_aprts = {}
 
-    for url in search_urls:
-        index = HYBELNO_IND if 'hybel.no' in url else FINNNO_IND
+    for search in search_urls:
+        index = search[1]
+        url = search[0]
         cur_aprts = process_page(url, cur_aprts, 1, index)
 
     with open(APRTS_FILE, 'r+') as fp:
@@ -76,34 +81,51 @@ def get_ids(search_urls):
     with open(APRTS_FILE, 'w+') as fp:
         json.dump(cur_aprts, fp)
 
-    #Alert if new aprts added (mere difference could be due to deletion)
+    # Alert if new aprts added (mere difference could be due to deletion)
     if len(cur_aprts.keys() - prev_aprts.keys()) > 0:
-        alert(prev_aprts, cur_aprts)
+        alert(prev_aprts, cur_aprts, search_urls)
 
 
-def alert(prev, curr):
+# Send push notification for maximum MAX_NOT_ENTRIES, and store all links in archive file
+def alert(prev, curr, searches):
     new = {}
     for (aprt_id, aprt_dict) in curr.items():
         if aprt_id not in prev:
             new[aprt_id] = aprt_dict
 
     subj = 'Nye treff på hybel.no!'
-    text = f'Det er blitt lagt til {len(new)} nye annonse(r) på hybel.no-søket ditt.' \
-           f'\n\n\nNye treff:'
+    notify_text = f'Det er blitt lagt til {len(new)} nye annonse(r) på hybel.no-søket ditt.' \
+                  f'\n\n'
 
-    links = ''
-    for (aprt_id, aprt_dict) in new.items():
-        links += '\n– {}\n'.format(aprt_dict['href'])
+    aprt_dicts = list(new.values())
+    archive_links = ''
+    for i in range(0, len(aprt_dicts)):
+        aprt_dict = aprt_dicts[i]
+        aprt_txt = f'\n<a href="{aprt_dict["href"]}">{aprt_dict["title"]}</a> – \
+                    {aprt_dict["rent"]}\n{aprt_dict["address"]}\n'
 
-    text += links
-    short_url = pyshorteners.Shortener().tinyurl.short(search_url)
-    text += '\n\nLenke til søk:\n{}\n\n\n\n\nVennlig hilsen,\nHybel.no-roboten'.format(short_url)
+        archive_links += aprt_txt
+        if i < MAX_NOT_ENTRIES:
+            notify_text += aprt_txt
+
+    if len(aprt_dicts) > MAX_NOT_ENTRIES:
+        notify_text += f'\n... og {len(aprt_dicts) - MAX_NOT_ENTRIES} annonse(r) til.\n'
+
+    short_urls = [pyshorteners.Shortener().tinyurl.short(url) for [url, _site] in searches]
+    notify_text += f'\n\nLenke til søk:\n'
+
+    for i in range(0, len(short_urls)):
+        search_text = "Hybel.no" if searches[i][1] == HYBELNO_IND else "Finn.no"
+        notify_text += f'<a href="{short_urls[i]}">{search_text} #{i + 1}</a>\n'
+
+    notify_text += '\n\n\nVennlig hilsen,\nHybel.no-roboten'
 
     if PUSH_NOTIFICATION:
-        notify.push_notification(text)
+        notify.push_notification(notify_text)
     else:
-        notify.mail(EMAIL, EMAIL, KEYCHAIN_NAME, subj, text)
-    write_to_file(links)
+        notify.mail(EMAIL, subj, notify_text)
+    write_to_file(archive_links)
+
 
 def write_to_file(links):
     timestamp = arrow.now().format('YYYY-MM-DD HH:mm:ss')
@@ -111,7 +133,7 @@ def write_to_file(links):
         fp.write(f'{timestamp}{links}\n\n')
 
 
-#Scrapes pages recursively. ID used since title (in url) might change.
+# Scrapes pages recursively. ID used since title (in url) might change.
 def process_page(page_url, aprt_dict, page_num, index):
     page = BROWSER.get(page_url).soup
 
@@ -125,9 +147,9 @@ def process_page(page_url, aprt_dict, page_num, index):
         if index == HYBELNO_IND:
             aprt_id = aprt.attrs['id']
             href = urljoin(HYBELNO_BASE_URL, aprt.attrs['href'])
-            title = aprt.find('h2', class_='card-title').string
-            address = aprt.find('p').string.strip()
-            rent = aprt.find('span', class_='listing-price').string.replace('\xa0', '')
+            title = aprt.find('h2', class_='card-title').get_text()
+            address = aprt.find('p').get_text().strip()
+            rent = aprt.find('span', class_='listing-price').get_text().replace('\xa0', '')
         else:
             id_title = aprt.find('div').attrs['aria-owns']
             title_h2 = aprt.find('h2', {'id': id_title})
@@ -135,11 +157,11 @@ def process_page(page_url, aprt_dict, page_num, index):
 
             href = title_link.attrs['href']
             aprt_id = title_link.attrs['id']
-            title = title_link.string
-            address = title_h2.next_sibling.contents[0].string
+            title = title_link.get_text()
+            address = title_h2.next_sibling.contents[0].get_text()
             size_rent = title_h2.next_sibling.next_sibling.contents
             if len(size_rent) > 1:
-                rent = size_rent[1].string.replace('\xa0', '')
+                rent = size_rent[1].get_text().replace('\xa0', '')
             else:
                 rent = 'Ikke oppgitt'
 
@@ -165,4 +187,3 @@ def process_page(page_url, aprt_dict, page_num, index):
 
 if __name__ == '__main__':
     main()
-
