@@ -105,22 +105,18 @@ def alert(prev, curr, searches):
     for i in range(0, len(aprt_dicts)):
         aprt_dict = aprt_dicts[i]
 
-        if i < MAX_NOT_ENTRIES:
-            aprt_url = pyshorteners.Shortener().tinyurl.short(aprt_dict["href"])
-            search_url = pyshorteners.Shortener().tinyurl.short(aprt_dict["search_url"])
-        else:
-            aprt_url = aprt_dict["href"]
-            search_url = aprt_dict["search_url"]
+        # Only store simple format in history (but store all)
+        archive_links += '\n– {}\n'.format(aprt_dict["href"])
+        if i >= MAX_NOT_ENTRIES:
+            continue
 
+        aprt_url = pyshorteners.Shortener().tinyurl.short(aprt_dict["href"])
+        search_url = pyshorteners.Shortener().tinyurl.short(aprt_dict["search_url"])
         link = f'<a href="{aprt_url}">{aprt_dict["title"]}</a>'
         site = "hybel.no" if "hybel.no" in aprt_dict["href"] else "finn.no"
         search_link = f'<a href="{search_url}">{site}</a>'
 
-        aprt_txt = f'\n{link} – {aprt_dict["rent"]} ({search_link})\n{aprt_dict["address"]}\n'
-
-        archive_links += aprt_txt
-        if i < MAX_NOT_ENTRIES:
-            notify_text += aprt_txt
+        notify_text += f'\n{link} – {aprt_dict["rent"]} ({search_link})\n{aprt_dict["address"]}\n'
 
     if len(aprt_dicts) > MAX_NOT_ENTRIES:
         notify_text += f'\n... og {len(aprt_dicts) - MAX_NOT_ENTRIES} annonse(r) til.\n'
