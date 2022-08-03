@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import mechanicalsoup as ms
+import os
 import notify
 import traceback
 from urllib.parse import urljoin
@@ -8,7 +9,6 @@ import json
 import pyshorteners
 from pathlib import Path
 import arrow
-import os
 
 PUSH_NOTIFICATION = True
 MAX_NOT_ENTRIES = 5
@@ -159,7 +159,7 @@ def process_page(page_url, aprt_dict, page_num, index, orig_url):
         if index == HYBELNO_IND:
             aprt_id = aprt.attrs['id']
             href = urljoin(HYBELNO_BASE_URL, aprt.attrs['href'])
-            title = aprt.find('h2', class_='card-title').get_text("**", strip=True)  # Combine text, and strip spaces
+            title = aprt.find('h2', class_='card-title').get_text(strip=True)  # Combine text, and strip spaces
             address = aprt.find('p').get_text("**", strip=True)
             rent = aprt.find('span', class_='listing-price').get_text("**", strip=True)
         else:
@@ -169,7 +169,7 @@ def process_page(page_url, aprt_dict, page_num, index, orig_url):
 
             href = title_link.attrs['href']
             aprt_id = title_link.attrs['id']
-            title = title_link.get_text("**", strip=True)
+            title = title_link.get_text(strip=True)
             address = title_h2.next_sibling.contents[0].get_text("**", strip=True)
             size_rent = title_h2.next_sibling.next_sibling.contents
             if len(size_rent) > 1:
