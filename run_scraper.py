@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import mechanicalsoup as ms
 import notify
 import traceback
@@ -157,9 +159,9 @@ def process_page(page_url, aprt_dict, page_num, index, orig_url):
         if index == HYBELNO_IND:
             aprt_id = aprt.attrs['id']
             href = urljoin(HYBELNO_BASE_URL, aprt.attrs['href'])
-            title = aprt.find('h2', class_='card-title').get_text()
-            address = aprt.find('p').get_text().strip()
-            rent = aprt.find('span', class_='listing-price').get_text().replace('\xa0', '')
+            title = aprt.find('h2', class_='card-title').get_text("**", strip=True)  # Combine text, and strip spaces
+            address = aprt.find('p').get_text("**", strip=True)
+            rent = aprt.find('span', class_='listing-price').get_text("**", strip=True)
         else:
             id_title = aprt.find('div').attrs['aria-owns']
             title_h2 = aprt.find('h2', {'id': id_title})
@@ -167,11 +169,11 @@ def process_page(page_url, aprt_dict, page_num, index, orig_url):
 
             href = title_link.attrs['href']
             aprt_id = title_link.attrs['id']
-            title = title_link.get_text()
-            address = title_h2.next_sibling.contents[0].get_text()
+            title = title_link.get_text("**", strip=True)
+            address = title_h2.next_sibling.contents[0].get_text("**", strip=True)
             size_rent = title_h2.next_sibling.next_sibling.contents
             if len(size_rent) > 1:
-                rent = size_rent[1].get_text().replace('\xa0', '')
+                rent = size_rent[1].get_text("**", strip=True)
             else:
                 rent = 'Ikke oppgitt'
 
@@ -189,7 +191,7 @@ def process_page(page_url, aprt_dict, page_num, index, orig_url):
     if next_page and page_num < MAX_PAGES:
         page_num += 1
 
-        next_url = urljoin(HYBELNO_BASE_URL if HYBELNO_IND else FINNNO_BASE_URL, next_page.attrs['href'])
+        next_url = urljoin(HYBELNO_BASE_URL if index == HYBELNO_IND else FINNNO_BASE_URL, next_page.attrs['href'])
 
         process_page(next_url, aprt_dict, page_num, index, orig_url)
 
