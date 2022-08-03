@@ -11,7 +11,7 @@ from pathlib import Path
 import arrow
 
 PUSH_NOTIFICATION = True
-MAX_NOT_ENTRIES = 5
+MAX_NOT_ENTRIES = 4
 
 BROWSER = ms.StatefulBrowser()
 
