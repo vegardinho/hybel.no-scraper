@@ -39,7 +39,7 @@ def main():
 
 
 def aprt_string_format(ad_link, search_link, ad_dict):
-    return f'{ad_link} – {ad_dict["rent"]} (Søk: "{search_link}")\n{ad_dict["address"]}'
+    return f'{ad_link} – {ad_dict["rent"]} ({search_link})\n{ad_dict["address"]}'
 
 
 # Scrapes pages recursively. ID used since title (in url) might change.
