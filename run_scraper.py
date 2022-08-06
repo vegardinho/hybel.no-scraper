@@ -2,7 +2,7 @@
 
 import mechanicalsoup as ms
 import os
-import notify
+import notify  # Local module, included in $PYTHONPATH
 import traceback
 from urllib.parse import urljoin
 import json
@@ -16,7 +16,6 @@ MAX_NOT_ENTRIES = 4
 BROWSER = ms.StatefulBrowser()
 
 SEARCH_URL_FILE = './search_url.in'
-HITS_FILE = './hits.out'
 APRTS_FILE = './aprts.out'
 HISTORY_FILE = './history.txt'
 MAX_PAGES = 20
@@ -46,7 +45,6 @@ def main():
 def setup():
     # Create files if not existing
     Path(APRTS_FILE).touch(exist_ok=True)
-    Path(HITS_FILE).touch(exist_ok=True)
     Path(HISTORY_FILE).touch(exist_ok=True)
     Path(SEARCH_URL_FILE).touch(exist_ok=True)
 
