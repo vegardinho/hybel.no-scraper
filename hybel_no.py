@@ -45,7 +45,7 @@ def get_attrs(aprt, aprt_dict, search):
     return aprt_dict
 
 
-def get_next_page(page):
+def get_next_page(page, _page_url):
     next_page = page.find('a', class_='page-item next-page ml-gutter')
 
     if not next_page:

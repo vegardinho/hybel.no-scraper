@@ -52,7 +52,7 @@ def get_attrs(aprt, aprt_dict, search):
     return aprt_dict
 
 
-def get_next_page(page):
+def get_next_page(page, _page_url):
     next_page = page.find('a', class_='button button--pill button--has-icon button--icon-right')
     if not next_page:
         return None
